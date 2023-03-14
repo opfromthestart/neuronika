@@ -469,7 +469,9 @@ pub(crate) fn check_conv_args(
             let dilated_kernel_dim = (*kernel_dim - 1) * *dilation_dim + 1;
             assert!(
                 *input_dim >= dilated_kernel_dim,
-                "The kernel size can't be greater than actual input size.",
+                "The kernel size ({}) can't be greater than actual input size ({}).",
+                dilated_kernel_dim,
+                input_dim,
             )
         });
 }

@@ -388,7 +388,7 @@
 
 use ndarray::{Ix1, Ix2, Ix3, Ix4, Ix5};
 
-use neuronika_core::{Convolution, MatMatMulT};
+pub use neuronika_core::{Convolution, MatMatMulT};
 
 use neuronika_variable::{PaddingMode, VarDiff};
 
@@ -808,9 +808,20 @@ where
     /// The resulting output shape will be *(N, Cout, Hout, Wout)*
     pub fn forward<I>(&self, input: I) -> VarDiff<Ix4>
     where
-        VarDiff<Ix4>: Convolution<I, Ix4>,
+        VarDiff<Ix4>: Convolution<I, Ix2>,
+        <VarDiff<Ix4> as Convolution<I, Ix2>>::Output: Into<VarDiff<Ix4>>
     {
-        todo!()
+        let (stride_h, stride_w) = self.stride;
+        let (padding_h, padding_w) = self.padding;
+        let (dilation_h, dilation_w) = self.dilation;
+
+        self.weight.clone().convolution(
+            input, 
+            Ix2(stride_h, stride_w),
+            Ix2(dilation_h, dilation_w),
+            1)
+            .into()
+                + self.bias.clone()
     }
 }
 
