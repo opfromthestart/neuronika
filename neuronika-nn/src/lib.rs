@@ -811,6 +811,7 @@ where
         VarDiff<Ix4>: Convolution<I, Ix2>,
         <VarDiff<Ix4> as Convolution<I, Ix2>>::Output: Into<VarDiff<Ix4>>
     {
+        // TODO: add padding
         let (stride_h, stride_w) = self.stride;
         let (padding_h, padding_w) = self.padding;
         let (dilation_h, dilation_w) = self.dilation;

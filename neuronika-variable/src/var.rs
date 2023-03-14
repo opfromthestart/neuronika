@@ -735,6 +735,14 @@ where
 
         Var::node(data, op, self.history)
     }
+
+    pub fn pool<T, E>(self, pooling: E, mode: T) -> Var<D>
+    where
+        T: 'static + PoolingMode<D>,
+        E: IntoDimension<Dim = <D::Smaller as Dimension>::Smaller>,
+    {
+        self.pooling(pooling.into_dimension(), mode)
+    }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1389,5 +1397,23 @@ where
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.data.borrow())
+    }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Pooling ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+impl<D: Dimension + 'static> Pooling<D> for Var<D> {
+    type Output = Var<D>;
+
+    fn pooling(self, pooling: <D::Smaller as Dimension>::Smaller, pooling_type: impl PoolingMode<D>) -> Self::Output 
+    {
+        let mut shapep = self.data.borrow().raw_dim().to_owned();
+        shapep.as_array_view_mut().iter_mut().skip(2)
+        .zip(pooling.as_array_view().iter())
+        .for_each(|(x,p)| *(x) /= p);
+        let data = Rc::new(RefCell::new(Array::zeros(shapep)));
+        let op = Rc::new(Pool::new(self.data, data.clone(), pooling, pooling_type));
+
+        Var::node(data, op, self.history)
     }
 }

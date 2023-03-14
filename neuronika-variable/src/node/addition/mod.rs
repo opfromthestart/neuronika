@@ -69,7 +69,7 @@ where
         debug_assert!(operand_gradient
             .borrow()
             .broadcast(gradient.shape())
-            .is_some());
+            .is_some(), "Gradients differ in shape: Op: {:?}, grad: {:?}", operand_gradient.shape(), gradient.shape());
 
         Self {
             operand_gradient,

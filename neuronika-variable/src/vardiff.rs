@@ -755,6 +755,14 @@ where
 
         VarDiff::node(var, grad.clone(), (Rc::new(op), grad), self.history)
     }
+
+    pub fn pool<T, E>(self, pooling: E, mode: T) -> VarDiff<D>
+    where
+        T: 'static + PoolingMode<D>,
+        E: IntoDimension<Dim = <D::Smaller as Dimension>::Smaller>,
+    {
+        self.pooling(pooling.into_dimension(), mode)
+    }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1130,7 +1138,7 @@ impl MatMatMulT<VarDiff<Ix2>> for VarDiff<Ix2> {
 
         let grad = Rc::new(Gradient::ndarray_zeros(DotDim::shape(
             self.var.data().raw_dim(),
-            rhs.var.data().raw_dim(),
+            rhs.var.data().t().raw_dim(),
         )));
         let left = MatrixMatrixMulTBackwardLeft::new(self.grad, rhs.var.data.clone(), grad.clone());
         let right =
@@ -1449,5 +1457,24 @@ where
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.var)
+    }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Pooling ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+impl<D: Dimension + 'static> Pooling<D> for VarDiff<D> {
+    type Output = VarDiff<D>;
+
+    fn pooling(self, pooling: <D::Smaller as Dimension>::Smaller, pooling_type: impl PoolingMode<D>) -> Self::Output 
+    {
+        let mut shapep = self.var.data.borrow().raw_dim().to_owned();
+        shapep.as_array_view_mut().iter_mut().skip(2)
+        .zip(pooling.as_array_view().iter())
+        .for_each(|(x,p)| *(x) /= p);
+        let grad = Rc::new(Gradient::ndarray_zeros(shapep));
+        let op = PoolBackward::new(self.var.data.clone(), self.grad, grad.clone(), pooling.clone(), pooling_type.clone());
+        let var = self.var.pooling(pooling, pooling_type);
+
+        VarDiff::node(var, grad.clone(), (Rc::new(op), grad), self.history)
     }
 }

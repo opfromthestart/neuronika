@@ -16,7 +16,7 @@ use ndarray_rand::{rand_distr::Uniform, RandomExt};
 use neuronika_core::*;
 
 pub use crate::{
-    node::{Constant, PaddingMode, Reflective, Replicative, Zero},
+    node::{Constant, PaddingMode, PoolingMode, MaxPool, Reflective, Replicative, Zero},
     var::Var,
     vardiff::VarDiff,
 };
